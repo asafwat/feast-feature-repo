@@ -1,0 +1,35 @@
+# Feast configuration. This file is the source of truth for the feature store
+# topology; `feast apply` reads `definitions.py` (the feature CATALOG) and
+# writes their protobuf representation into the registry pointed to here.
+#
+# Lives in a dedicated Git repo (asafwat/feast-feature-repo) so that feature
+# evolution is decoupled from the Feast Feature Server's deployment lifecycle.
+# The chart's gitSync sidecar clones this repo into the Feature Server pod;
+# the Airflow `feast_apply` DAG runs `feast apply` from a freshly cloned copy
+# whenever this file or definitions.py changes.
+#
+# Registry      = s3 (registry.db blob on MinIO at s3://feast-offline/).
+# Offline store = file (Parquet on MinIO; FileSource s3_endpoint_override in
+#                 definitions.py points at the MinIO endpoint).
+# Online store  = Redis (the chart deployed in Round 1).
+#
+# `${REDIS_PASSWORD}` is substituted from the env at config-load time — the
+# Feature Server pod gets it via a Secret keyRef from the `redis-auth` K8s
+# Secret (created by the redis chart's ESO template). MinIO creds for the
+# S3 registry come from standard AWS_* env vars (also ESO-managed).
+project: fraud
+provider: local
+
+registry:
+  registry_type: file
+  path: s3://feast-offline/registry.db
+
+offline_store:
+  type: file
+
+online_store:
+  type: redis
+  connection_string: "redis-master.feast.svc.cluster.local:6379,db=0,password=${REDIS_PASSWORD}"
+
+# v3 is the recommended serialization; v2 is deprecated in Feast 0.50.
+entity_key_serialization_version: 3

@@ -1,0 +1,8 @@
+# Feast writes a local sqlite registry mirror + materialization metadata into
+# this directory when run from a developer machine; the s3 registry is the
+# source of truth.
+data/
+.feast/
+*.db
+__pycache__/
+*.pyc
