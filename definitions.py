@@ -12,7 +12,7 @@ to MinIO by generate_data.py and refreshed by the Airflow materialize DAG).
 """
 from datetime import timedelta
 
-from feast import Entity, FeatureView, Field, FileSource
+from feast import Entity, FeatureService, FeatureView, Field, FileSource
 from feast.types import Float32
 
 user = Entity(
@@ -67,4 +67,23 @@ user_features = FeatureView(
     online=True,
     source=user_features_source,
     tags={"team": "fraud-detection", "owner": "ml-platform"},
+)
+
+# FeatureService — names a versioned bundle of features that downstream
+# consumers (training jobs, KServe transformer, online lookup clients)
+# request by name rather than by enumerating individual feature columns.
+# This gives a stable contract between the feature catalog and consumers:
+# adding a column to `user_features` is independent of which consumers want
+# it; promoting a new model version means defining `fraud_detection_v2`
+# without disturbing v1's signature.
+#
+# The KServe transformer in this exercise calls Feast's HTTP API with
+#   {"feature_service": "fraud_detection_v1", "entities": {"user_id": [...]}}
+# and gets back exactly the features below — same set the training task
+# joins via get_historical_features(feature_service=fraud_detection_v1).
+fraud_detection_v1 = FeatureService(
+    name="fraud_detection_v1",
+    features=[user_features],
+    description="Fraud-detection model v1 — all user-level aggregates",
+    tags={"team": "fraud-detection", "model_name": "fraud-detector-feast"},
 )
