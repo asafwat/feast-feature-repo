@@ -1,0 +1,44 @@
+# Continuous Integration for the Feast feature catalog.
+#
+# What this catches BEFORE a bad commit reaches gitSync:
+#   - feature_store.yaml malformed (YAML errors, missing keys)
+#   - definitions.py syntax/import errors
+#   - FeatureView/Entity/FeatureService schema issues
+#   - Type mismatches (e.g. a Field with an invalid dtype)
+#
+# Without these checks, a bad commit propagates to the Feast Feature Server
+# via gitSync within ~30s and crashes the pod. CI catches it at PR time.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint
+        run: ruff check definitions.py tests/
+
+      - name: Validate catalog
+        run: pytest tests/ -v

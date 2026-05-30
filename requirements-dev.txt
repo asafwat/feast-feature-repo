@@ -1,0 +1,10 @@
+# Dev dependencies for CI. The Feast version MUST match what the cluster runs
+# (feast-feature-server:0.7 image runs Feast 0.50.0); a mismatch in the schema
+# protobufs would fail the validation tests against the production registry.
+#
+# `feast[redis]` is enough — we don't need [aws] for CI, since the CI tests
+# use a local sqlite registry instead of s3.
+feast[redis]==0.50.0
+PyYAML==6.0.2
+ruff==0.7.4
+pytest==8.3.4

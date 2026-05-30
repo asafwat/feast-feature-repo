@@ -1,0 +1,20 @@
+# Ruff lint + pytest config for the Feast feature catalog.
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+  # Feast's `from feast import *` style is common in definitions.py.
+  "F403", "F405",
+  # Feast schemas often have long lines.
+  "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --tb=short"
