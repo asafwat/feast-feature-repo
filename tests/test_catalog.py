@@ -15,7 +15,6 @@ A separate integration suite (not built yet) would cover those.
 from __future__ import annotations
 
 import importlib.util
-import os
 import sys
 from pathlib import Path
 
@@ -27,7 +26,7 @@ REPO_ROOT = Path(__file__).parent.parent
 
 # ── 1. feature_store.yaml ──────────────────────────────────────────────────
 def test_feature_store_yaml_parses():
-    with open(REPO_ROOT / "feature_store.yaml", "r", encoding="utf-8") as f:
+    with open(REPO_ROOT / "feature_store.yaml", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     assert isinstance(config, dict)
 
@@ -35,7 +34,7 @@ def test_feature_store_yaml_parses():
 def test_feature_store_yaml_has_required_keys():
     """Every Feast feature_store.yaml needs at minimum: project, registry,
     online_store, offline_store, provider."""
-    with open(REPO_ROOT / "feature_store.yaml", "r", encoding="utf-8") as f:
+    with open(REPO_ROOT / "feature_store.yaml", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     required = {"project", "registry", "online_store", "offline_store", "provider"}
     missing = required - set(config.keys())
@@ -45,7 +44,7 @@ def test_feature_store_yaml_has_required_keys():
 def test_registry_points_to_s3():
     """Lab convention: registry MUST be s3-backed so all consumers see the same one.
     A local-file registry would silently break the Airflow apply DAG."""
-    with open(REPO_ROOT / "feature_store.yaml", "r", encoding="utf-8") as f:
+    with open(REPO_ROOT / "feature_store.yaml", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     path = config["registry"].get("path", "")
     assert path.startswith("s3://"), f"registry path must be s3://, got: {path!r}"
@@ -91,7 +90,6 @@ def test_feature_store_loads_with_local_registry(tmp_path, definitions_module):
     then run `FeatureStore.apply([...])` — same code path Feast's CLI takes.
     Catches type errors, name collisions, missing source columns, etc."""
     from feast import FeatureStore
-    from feast.repo_config import RepoConfig
 
     # Sync the catalog objects from definitions.py into a temp feature_store.yaml.
     repo_dir = tmp_path / "feast_repo"
@@ -112,11 +110,11 @@ def test_feature_store_loads_with_local_registry(tmp_path, definitions_module):
 
     fs = FeatureStore(repo_path=str(repo_dir))
     # Collect all the Feast objects registered in definitions.py.
-    from feast import Entity, FeatureService, FeatureView, FileSource
+    from feast import Entity, FeatureService, FeatureView
 
     objects = []
     for v in vars(definitions_module).values():
-        if isinstance(v, (Entity, FeatureView, FeatureService)):
+        if isinstance(v, Entity | FeatureView | FeatureService):
             objects.append(v)
 
     # `apply` is the same call `feast apply` makes. If anything's wrong with
